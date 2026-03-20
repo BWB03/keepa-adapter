@@ -80,7 +80,27 @@ export const KeepaProductSchema = z
     frequentlyBoughtTogether: z.array(z.string()).nullable().optional(),
     eanList: z.array(z.string()).nullable().optional(),
     upcList: z.array(z.string()).nullable().optional(),
-    type: z.number().nullable().optional(),
+    variations: z
+      .array(
+        z
+          .object({
+            asin: z.string(),
+            attributes: z
+              .array(
+                z.object({
+                  dimension: z.string(),
+                  value: z.string(),
+                })
+              )
+              .nullable()
+              .optional(),
+            image: z.string().nullable().optional(),
+          })
+          .passthrough()
+      )
+      .nullable()
+      .optional(),
+    type: z.union([z.number(), z.string()]).nullable().optional(),
     availabilityAmazon: z.number().nullable().optional(),
     isAdultProduct: z.boolean().nullable().optional(),
     newPriceIsMAP: z.boolean().nullable().optional(),

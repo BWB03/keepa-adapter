@@ -15,7 +15,11 @@ function makeRawProduct(overrides: Partial<KeepaProduct> = {}): KeepaProduct {
     title: "Test Product",
     brand: "TestBrand",
     parentAsin: "B0012PARENT",
-    variationCSV: "Color,Blue,Size,Large",
+    variationCSV: "B0012ZQPKG,B00B8YTP12",
+    variations: [
+      { asin: "B0012ZQPKG", attributes: [{ dimension: "Color", value: "Blue" }, { dimension: "Size", value: "Large" }] },
+      { asin: "B00B8YTP12", attributes: [{ dimension: "Color", value: "Red" }, { dimension: "Size", value: "Small" }] },
+    ],
     csv: [
       // AMAZON (0): last value = 1999 cents
       [0, 1999],
@@ -50,10 +54,8 @@ describe("transformer", () => {
       expect(snapshot.parent_asin).toBe("B0012PARENT");
       expect(snapshot.images).toEqual(["img1.jpg", "img2.jpg"]);
       expect(snapshot.features).toEqual(["Feature 1", "Feature 2"]);
-      expect(snapshot.variation_attributes).toEqual({
-        Color: "Blue",
-        Size: "Large",
-      });
+      expect(snapshot.variation_attributes).toEqual({ Color: "Blue", Size: "Large" });
+      expect(snapshot.child_asins).toEqual(["B00B8YTP12"]);
     });
 
     it("handles null csv arrays", () => {
@@ -104,7 +106,7 @@ describe("transformer", () => {
   });
 
   describe("transformVariationFamily", () => {
-    it("parses variation CSV", () => {
+    it("parses variations array", () => {
       const raw = makeRawProduct();
       const result = transformVariationFamily(raw);
       expect(result.parent_asin).toBe("B0012PARENT");
@@ -112,12 +114,21 @@ describe("transformer", () => {
         Color: "Blue",
         Size: "Large",
       });
+      expect(result.variation_asins).toEqual(["B0012ZQPKG", "B00B8YTP12"]);
     });
 
-    it("handles no variation CSV", () => {
-      const raw = makeRawProduct({ variationCSV: null });
+    it("falls back to variationCSV when no variations array", () => {
+      const raw = makeRawProduct({ variations: undefined });
       const result = transformVariationFamily(raw);
       expect(result.variation_attributes).toBeNull();
+      expect(result.variation_asins).toEqual(["B0012ZQPKG", "B00B8YTP12"]);
+    });
+
+    it("handles no variation data at all", () => {
+      const raw = makeRawProduct({ variationCSV: null, variations: undefined });
+      const result = transformVariationFamily(raw);
+      expect(result.variation_attributes).toBeNull();
+      expect(result.variation_asins).toEqual([]);
     });
   });
 
