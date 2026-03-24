@@ -121,6 +121,16 @@ Once connected via Claude Desktop, try:
 - "Add a coupon promo for B0012ZQPKG starting today"
 - "How many API tokens do I have left?"
 
+## Price Format
+
+All price fields (`amazon_price`, `new_price`, `buy_box_price`) are returned in **dollars**, not cents. The adapter converts from Keepa's raw cent values automatically.
+
+```
+snapshot.new_price  →  35.99   (dollars, ready to display)
+```
+
+Do **not** divide by 100 — the conversion is already done. Keepa's API returns prices in cents (e.g. `3599`), but the adapter handles that internally.
+
 ## Change Detection Severity
 
 When snapshots are compared, changes are classified:
