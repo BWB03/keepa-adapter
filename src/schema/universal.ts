@@ -42,6 +42,17 @@ export const UniversalEnvelopeSchema = z.object({
 
 export type UniversalEnvelope = z.infer<typeof UniversalEnvelopeSchema>;
 
+// --- Subcategory Rank ---
+
+export const SubcategoryRankSchema = z.object({
+  category_id: z.number(),
+  category_name: z.string().nullable(),
+  rank: z.number().nullable(),
+  is_primary: z.boolean(),
+});
+
+export type SubcategoryRank = z.infer<typeof SubcategoryRankSchema>;
+
 // --- Product Snapshot ---
 
 export const ProductSnapshotSchema = z.object({
@@ -52,6 +63,7 @@ export const ProductSnapshotSchema = z.object({
   amazon_price: z.number().nullable(),
   new_price: z.number().nullable(),
   sales_rank: z.number().nullable(),
+  subcategory_ranks: z.array(SubcategoryRankSchema),
   rating: z.number().nullable(),
   review_count: z.number().nullable(),
   buy_box_seller_id: z.string().nullable(),

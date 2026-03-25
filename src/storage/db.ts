@@ -83,5 +83,12 @@ export function initDb(dbPath?: string): Database.Database {
     );
   `);
 
+  // Migrations for existing databases
+  const columns = db.prepare("PRAGMA table_info(snapshots)").all() as { name: string }[];
+  const columnNames = new Set(columns.map((c) => c.name));
+  if (!columnNames.has("subcategory_ranks_json")) {
+    db.exec("ALTER TABLE snapshots ADD COLUMN subcategory_ranks_json TEXT");
+  }
+
   return db;
 }

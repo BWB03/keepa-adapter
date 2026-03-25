@@ -125,5 +125,30 @@ export function detectChanges(
     addChange("description", previous.description, current.description, "info");
   }
 
+  // Warning: subcategory rank significant changes (>30% worsening in any subcat)
+  if (previous.subcategory_ranks?.length && current.subcategory_ranks?.length) {
+    for (const curr of current.subcategory_ranks) {
+      const prev = previous.subcategory_ranks.find(
+        (p) => p.category_id === curr.category_id
+      );
+      if (
+        prev?.rank != null &&
+        curr.rank != null &&
+        prev.rank > 0
+      ) {
+        const pctChange = ((curr.rank - prev.rank) / prev.rank) * 100;
+        if (pctChange > 30) {
+          const label = curr.category_name ?? String(curr.category_id);
+          addChange(
+            `subcategory_rank:${label}`,
+            prev.rank,
+            curr.rank,
+            "warning"
+          );
+        }
+      }
+    }
+  }
+
   return changes;
 }

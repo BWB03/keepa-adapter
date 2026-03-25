@@ -11,6 +11,7 @@ function makeSnapshot(salesRank: number | null): ProductSnapshot {
     amazon_price: null,
     new_price: null,
     sales_rank: salesRank,
+    subcategory_ranks: [],
     rating: null,
     review_count: null,
     buy_box_seller_id: null,

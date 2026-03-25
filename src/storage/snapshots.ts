@@ -8,13 +8,13 @@ export function insertSnapshot(
 ): number {
   const stmt = db.prepare(`
     INSERT INTO snapshots (
-      asin, domain, amazon_price, new_price, sales_rank, rating,
-      review_count, buy_box_seller_id, buy_box_is_amazon, buy_box_price,
+      asin, domain, amazon_price, new_price, sales_rank, subcategory_ranks_json,
+      rating, review_count, buy_box_seller_id, buy_box_is_amazon, buy_box_price,
       title, images_json, features_json, description,
       parent_asin, child_asins_json, variation_attributes_json, raw_json
     ) VALUES (
       ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?,
+      ?, ?, ?, ?, ?,
       ?, ?, ?, ?,
       ?, ?, ?, ?
     )
@@ -26,6 +26,7 @@ export function insertSnapshot(
     snapshot.amazon_price,
     snapshot.new_price,
     snapshot.sales_rank,
+    JSON.stringify(snapshot.subcategory_ranks),
     snapshot.rating,
     snapshot.review_count,
     snapshot.buy_box_seller_id,
@@ -86,6 +87,7 @@ function rowToSnapshot(row: Record<string, unknown>): ProductSnapshot {
     amazon_price: (row.amazon_price as number) ?? null,
     new_price: (row.new_price as number) ?? null,
     sales_rank: (row.sales_rank as number) ?? null,
+    subcategory_ranks: safeJsonParse(row.subcategory_ranks_json as string, []),
     rating: (row.rating as number) ?? null,
     review_count: (row.review_count as number) ?? null,
     buy_box_seller_id: (row.buy_box_seller_id as string) ?? null,

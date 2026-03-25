@@ -11,6 +11,7 @@ function makeSnapshot(overrides: Partial<ProductSnapshot> = {}): ProductSnapshot
     amazon_price: 19.99,
     new_price: 19.99,
     sales_rank: 5000,
+    subcategory_ranks: [],
     rating: 4.5,
     review_count: 100,
     buy_box_seller_id: "ATVPDKIKX0DER",
@@ -110,5 +111,39 @@ describe("change-detection", () => {
     const imgChange = changes.find((c) => c.field === "images");
     expect(imgChange).toBeDefined();
     expect(imgChange!.severity).toBe("warning");
+  });
+
+  it("detects subcategory rank worsening >30% as warning", () => {
+    const prev = makeSnapshot({
+      subcategory_ranks: [
+        { category_id: 100, category_name: "Zinc", rank: 3, is_primary: false },
+      ],
+    });
+    const curr = makeSnapshot({
+      subcategory_ranks: [
+        { category_id: 100, category_name: "Zinc", rank: 5, is_primary: false },
+      ],
+    });
+    const changes = detectChanges(prev, curr);
+    const subcatChange = changes.find((c) => c.field.startsWith("subcategory_rank:"));
+    expect(subcatChange).toBeDefined();
+    expect(subcatChange!.field).toBe("subcategory_rank:Zinc");
+    expect(subcatChange!.severity).toBe("warning");
+  });
+
+  it("ignores small subcategory rank changes", () => {
+    const prev = makeSnapshot({
+      subcategory_ranks: [
+        { category_id: 100, category_name: "Zinc", rank: 10, is_primary: false },
+      ],
+    });
+    const curr = makeSnapshot({
+      subcategory_ranks: [
+        { category_id: 100, category_name: "Zinc", rank: 12, is_primary: false },
+      ],
+    });
+    const changes = detectChanges(prev, curr);
+    const subcatChange = changes.find((c) => c.field.startsWith("subcategory_rank:"));
+    expect(subcatChange).toBeUndefined();
   });
 });

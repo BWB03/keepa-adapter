@@ -1,5 +1,5 @@
 import { ADAPTER_VERSION, SOURCE, CSV_TYPE, KEEPA_DOMAINS } from "../constants.js";
-import type { UniversalEnvelope, ProductSnapshot } from "../schema/universal.js";
+import type { UniversalEnvelope, ProductSnapshot, SubcategoryRank } from "../schema/universal.js";
 import type { TokenMeta } from "./client.js";
 import type { KeepaProduct } from "../schema/keepa.js";
 import { getLatestCsvValue } from "./keepa-csv.js";
@@ -93,6 +93,38 @@ export function transformProductSnapshot(
     }
   }
 
+  // Build category name lookup from categoryTree
+  const catNameMap = new Map<number, string>();
+  if (raw.categoryTree) {
+    for (const cat of raw.categoryTree) {
+      catNameMap.set(cat.catId, cat.name);
+    }
+  }
+
+  // Extract subcategory ranks from salesRanks
+  const subcategoryRanks: SubcategoryRank[] = [];
+  if (raw.salesRanks) {
+    const primaryCatId = raw.salesRankReference ?? null;
+    for (const [catIdStr, history] of Object.entries(raw.salesRanks)) {
+      const catId = Number(catIdStr);
+      // history is a Keepa time-series: [time, rank, time, rank, ...]
+      const lastValue = history.length >= 2 ? history[history.length - 1] : null;
+      subcategoryRanks.push({
+        category_id: catId,
+        category_name: catNameMap.get(catId) ?? null,
+        rank: lastValue === -1 ? null : lastValue,
+        is_primary: catId === primaryCatId,
+      });
+    }
+    // Sort: primary first, then by rank ascending
+    subcategoryRanks.sort((a, b) => {
+      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+      if (a.rank == null) return 1;
+      if (b.rank == null) return -1;
+      return a.rank - b.rank;
+    });
+  }
+
   // Buy box info
   const buyBoxHistory = raw.buyBoxSellerIdHistory ?? raw.stats?.buyBoxSellerIdHistory;
   const buyBoxSellerId = buyBoxHistory?.length
@@ -107,6 +139,7 @@ export function transformProductSnapshot(
     amazon_price: getLatestCsvValue(csv[CSV_TYPE.AMAZON], { isPriceCents: true }),
     new_price: getLatestCsvValue(csv[CSV_TYPE.NEW], { isPriceCents: true }),
     sales_rank: getLatestCsvValue(csv[CSV_TYPE.SALES_RANK]),
+    subcategory_ranks: subcategoryRanks,
     rating: (() => {
       const raw_rating = getLatestCsvValue(csv[CSV_TYPE.RATING]);
       return raw_rating != null ? raw_rating / 10 : null;

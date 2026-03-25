@@ -77,6 +77,9 @@ export const KeepaProductSchema = z
       .nullable()
       .optional(),
     buyBoxSellerIdHistory: z.array(z.string()).nullable().optional(),
+    salesRanks: z.record(z.string(), z.array(z.number())).nullable().optional(),
+    salesRankReference: z.number().nullable().optional(),
+    salesRankReferenceHistory: z.array(z.number()).nullable().optional(),
     frequentlyBoughtTogether: z.array(z.string()).nullable().optional(),
     eanList: z.array(z.string()).nullable().optional(),
     upcList: z.array(z.string()).nullable().optional(),

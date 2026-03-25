@@ -26,6 +26,7 @@ function makeSnapshot(
     amazon_price: 19.99,
     new_price: 19.99,
     sales_rank: 5000,
+    subcategory_ranks: [{ category_id: 3774511, category_name: "Zinc", rank: 3, is_primary: false }],
     rating: 4.5,
     review_count: 100,
     buy_box_seller_id: "ATVPDKIKX0DER",
