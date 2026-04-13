@@ -59,5 +59,5 @@ export const CSV_TYPE = {
   PRIME_EXCLUSIVE: 31,
 } as const;
 
-export const DEFAULT_DOMAIN = "com";
+export const DEFAULT_DOMAIN = process.env.KEEPA_DEFAULT_DOMAIN ?? "com";
 export const DEFAULT_STATS_DAYS = 30;

@@ -7,7 +7,12 @@
     "keepa-adapter": "./dist/index.js"
   },
   "exports": {
-    ".": "./dist/openclaw.js"
+    ".": "./dist/openclaw.js",
+    "./client": "./dist/adapter/client.js",
+    "./endpoints": "./dist/adapter/endpoints.js",
+    "./transformer": "./dist/adapter/transformer.js",
+    "./schema": "./dist/schema/universal.js",
+    "./constants": "./dist/constants.js"
   },
   "scripts": {
     "build": "tsup",

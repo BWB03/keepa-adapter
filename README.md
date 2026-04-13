@@ -18,7 +18,21 @@ cp .env.example .env
 |----------|----------|---------|-------------|
 | `KEEPA_API_KEY` | Yes | — | Your Keepa API key |
 | `KEEPA_TOKENS_PER_MINUTE` | No | `5` | Token refill rate for your Keepa plan |
+| `KEEPA_DEFAULT_DOMAIN` | No | `com` | Default Amazon marketplace (e.g. `uk`, `de`, `jp`, `ca`, `au`) |
 | `KEEPA_DB_PATH` | No | `./keepa.db` | Path to SQLite database |
+
+### International Marketplaces
+
+All tools support international Amazon marketplaces via the `domain` parameter. Set `KEEPA_DEFAULT_DOMAIN` in your `.env` to avoid passing it on every call:
+
+```bash
+# .env
+KEEPA_DEFAULT_DOMAIN=uk   # All tools now default to Amazon.co.uk
+```
+
+Supported domains: `com` (US), `uk`, `de`, `fr`, `jp`, `ca`, `cn`, `it`, `es`, `in`, `mx`, `br`, `au`
+
+You can still override per-call by passing `domain` explicitly to any tool.
 
 ## Usage
 
