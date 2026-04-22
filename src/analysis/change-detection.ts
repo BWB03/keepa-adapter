@@ -49,11 +49,14 @@ export function detectChanges(
     );
   }
 
-  // Warning: images changed
-  const prevImages = JSON.stringify(previous.images);
-  const currImages = JSON.stringify(current.images);
-  if (prevImages !== currImages) {
-    addChange("images", prevImages, currImages, "warning");
+  // Warning: images changed. Skip when previous was empty — that's first capture
+  // (or recovery from a Keepa response that omitted imagesCSV), not a real image swap.
+  if (previous.images.length > 0) {
+    const prevImages = JSON.stringify(previous.images);
+    const currImages = JSON.stringify(current.images);
+    if (prevImages !== currImages) {
+      addChange("images", prevImages, currImages, "warning");
+    }
   }
 
   // Warning: sales rank worsened >20%

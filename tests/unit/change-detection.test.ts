@@ -123,6 +123,14 @@ describe("change-detection", () => {
     expect(imgChange!.severity).toBe("warning");
   });
 
+  it("does not flag image change when previous images are empty", () => {
+    const prev = makeSnapshot({ images: [] });
+    const curr = makeSnapshot({ images: ["a.jpg"] });
+    const changes = detectChanges(prev, curr);
+    const imgChange = changes.find((c) => c.field === "images");
+    expect(imgChange).toBeUndefined();
+  });
+
   it("detects subcategory rank worsening >30% as warning", () => {
     const prev = makeSnapshot({
       subcategory_ranks: [

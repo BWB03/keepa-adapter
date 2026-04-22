@@ -39,7 +39,6 @@ export async function runDailyCollection(
         asins: batch,
         domain,
         stats: 30,
-        history: false,
         rating: true,
       });
 

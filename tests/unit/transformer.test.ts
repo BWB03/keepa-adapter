@@ -78,7 +78,10 @@ describe("transformer", () => {
       expect(snapshot.new_price).toBe(24.99);
       expect(snapshot.sales_rank).toBe(5000);
       expect(snapshot.parent_asin).toBe("B0012PARENT");
-      expect(snapshot.images).toEqual(["img1.jpg", "img2.jpg"]);
+      expect(snapshot.images).toEqual([
+        "https://m.media-amazon.com/images/I/img1.jpg",
+        "https://m.media-amazon.com/images/I/img2.jpg",
+      ]);
       expect(snapshot.features).toEqual(["Feature 1", "Feature 2"]);
       expect(snapshot.variation_attributes).toEqual({ Color: "Blue", Size: "Large" });
       expect(snapshot.child_asins).toEqual(["B00B8YTP12"]);

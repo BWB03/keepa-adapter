@@ -81,9 +81,12 @@ export function transformProductSnapshot(
   const statsCurrent = raw.stats?.current;
   const domainStr = domain ?? domainName(raw.domainId);
 
-  // Parse images from imagesCSV (comma-separated filenames)
+  // Keepa returns imagesCSV as comma-separated Amazon image filenames; emit full URLs.
   const images: string[] = raw.imagesCSV
-    ? raw.imagesCSV.split(",").filter(Boolean)
+    ? raw.imagesCSV
+        .split(",")
+        .filter(Boolean)
+        .map((f) => `https://m.media-amazon.com/images/I/${f}`)
     : [];
 
   // Parse variation attributes from the `variations` array (structured data)
