@@ -94,6 +94,30 @@ describe("transformer", () => {
       expect(snapshot.sales_rank).toBeNull();
     });
 
+    it("reads images from the structured images array (new Keepa format)", () => {
+      const raw = makeRawProduct({
+        imagesCSV: null,
+        images: [
+          { l: "61iyWLSkcJL.jpg", lH: 2540, lW: 2540, m: "31zHQ8Sxh6L.jpg", mH: 500, mW: 500 },
+          { l: "71EEZOl2bOL.jpg", lH: 2540, lW: 2540, m: "41Ab.jpg", mH: 500, mW: 500 },
+        ],
+      });
+      const snapshot = transformProductSnapshot(raw);
+      expect(snapshot.images).toEqual([
+        "https://m.media-amazon.com/images/I/61iyWLSkcJL.jpg",
+        "https://m.media-amazon.com/images/I/71EEZOl2bOL.jpg",
+      ]);
+    });
+
+    it("prefers structured images array over legacy imagesCSV when both are present", () => {
+      const raw = makeRawProduct({
+        imagesCSV: "legacy1.jpg,legacy2.jpg",
+        images: [{ l: "new.jpg", lH: 1, lW: 1, m: "newm.jpg", mH: 1, mW: 1 }],
+      });
+      const snapshot = transformProductSnapshot(raw);
+      expect(snapshot.images).toEqual(["https://m.media-amazon.com/images/I/new.jpg"]);
+    });
+
     it("falls back to stats.current when csv arrays are null", () => {
       const raw = makeRawProduct({
         csv: null,

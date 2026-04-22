@@ -13,6 +13,21 @@ export const KeepaProductSchema = z
     variationCSV: z.string().nullable().optional(),
     csv: z.array(z.array(z.number()).nullable()).nullable().optional(),
     imagesCSV: z.string().nullable().optional(),
+    images: z
+      .array(
+        z
+          .object({
+            l: z.string().nullable().optional(),
+            lH: z.number().nullable().optional(),
+            lW: z.number().nullable().optional(),
+            m: z.string().nullable().optional(),
+            mH: z.number().nullable().optional(),
+            mW: z.number().nullable().optional(),
+          })
+          .passthrough()
+      )
+      .nullable()
+      .optional(),
     manufacturer: z.string().nullable().optional(),
     description: z.string().nullable().optional(),
     features: z.array(z.string()).nullable().optional(),

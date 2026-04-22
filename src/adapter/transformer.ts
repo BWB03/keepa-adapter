@@ -81,13 +81,17 @@ export function transformProductSnapshot(
   const statsCurrent = raw.stats?.current;
   const domainStr = domain ?? domainName(raw.domainId);
 
-  // Keepa returns imagesCSV as comma-separated Amazon image filenames; emit full URLs.
-  const images: string[] = raw.imagesCSV
-    ? raw.imagesCSV
-        .split(",")
-        .filter(Boolean)
-        .map((f) => `https://m.media-amazon.com/images/I/${f}`)
-    : [];
+  // Keepa's current API returns an `images` array of {l,lH,lW,m,mH,mW} objects.
+  // Older responses used a flat `imagesCSV` string of comma-separated filenames.
+  // Handle both; emit full Amazon CDN URLs using the large variant when available.
+  const imageFilenames: string[] = raw.images?.length
+    ? raw.images.map((img) => img.l ?? img.m ?? "").filter(Boolean)
+    : raw.imagesCSV
+      ? raw.imagesCSV.split(",").filter(Boolean)
+      : [];
+  const images: string[] = imageFilenames.map(
+    (f) => `https://m.media-amazon.com/images/I/${f}`
+  );
 
   // Parse variation attributes from the `variations` array (structured data)
   // variationCSV is just a list of variation ASINs, not key-value pairs
