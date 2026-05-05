@@ -12,6 +12,34 @@ cp .env.example .env
 # Edit .env and add your Keepa API key
 ```
 
+## Install Via Claude Desktop MCPB
+
+The easiest Claude Desktop install path is the `.mcpb` bundle from GitHub Releases.
+
+1. Download `keepa-adapter-vX.Y.Z.mcpb` from the latest release.
+2. Open the `.mcpb` file with Claude Desktop.
+3. Enter your Keepa API key when Claude asks for `Keepa API Key`.
+4. Enable or restart the extension if Claude Desktop prompts you.
+5. Start a new Claude chat and confirm the Keepa tools are available.
+
+The bundle passes your key to the local MCP server as `KEEPA_API_KEY`. Optional settings such as `KEEPA_TOKENS_PER_MINUTE`, `KEEPA_DEFAULT_DOMAIN`, and `KEEPA_DB_PATH` remain available for manual MCP installs.
+
+The release `.mcpb` is built on macOS because this adapter uses `better-sqlite3`, a native Node dependency. Windows and Linux users should build a local MCPB on their target machine with `npm run mcpb:pack`.
+
+## Build A Local MCPB
+
+```bash
+npm install
+npm run mcpb:validate
+npm run mcpb:pack
+```
+
+The packaged bundle is written to:
+
+```bash
+release/keepa-adapter-v1.0.1.mcpb
+```
+
 ### Environment Variables
 
 | Variable | Required | Default | Description |
@@ -38,7 +66,7 @@ You can still override per-call by passing `domain` explicitly to any tool.
 
 ### As an MCP Server (Claude Desktop)
 
-Add to your Claude Desktop config (`claude_desktop_config.json`):
+If you prefer manual JSON config instead of the `.mcpb` installer, add this server to Claude Desktop's MCP config (`claude_desktop_config.json`):
 
 ```json
 {
@@ -58,6 +86,35 @@ Or run in development mode:
 
 ```bash
 npm run dev
+```
+
+### Claude Code / Codex Setup
+
+Claude Code, Codex, and other stdio MCP clients can use the same local server command after building from source:
+
+```json
+{
+  "mcpServers": {
+    "keepa": {
+      "command": "node",
+      "args": ["/absolute/path/to/keepa-adapter/dist/index.js"],
+      "env": {
+        "KEEPA_API_KEY": "your_key_here"
+      }
+    }
+  }
+}
+```
+
+For Codex CLI-style configs, use the equivalent command/args/env shape supported by your client:
+
+```toml
+[mcp_servers.keepa]
+command = "node"
+args = ["/absolute/path/to/keepa-adapter/dist/index.js"]
+
+[mcp_servers.keepa.env]
+KEEPA_API_KEY = "your_key_here"
 ```
 
 ### As an OpenClaw Skill (for bots)
@@ -175,10 +232,47 @@ When snapshots are compared, changes are classified:
 ```bash
 npm run build          # Build with tsup
 npm test               # Run unit tests
+npm run mcpb:validate  # Validate MCPB bundle
+npm run mcpb:pack      # Build release/keepa-adapter-vX.Y.Z.mcpb
 npm run test:watch     # Watch mode
 npm run test:integration  # Integration tests (requires KEEPA_API_KEY)
 npm run discover       # Hit live API and save raw response for schema modeling
 ```
+
+## MCPB Release Flow
+
+Version tags create GitHub Releases with the packaged `.mcpb` attached:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+The release workflow runs tests, builds the adapter, validates the MCPB manifest, packs the bundle, and uploads `release/*.mcpb` as a release asset.
+
+## MCPB Test Checklist
+
+- Run `npm test`.
+- Run `npm run build`.
+- Run `npm run mcpb:validate`.
+- Run `npm run mcpb:pack`.
+- Confirm `release/keepa-adapter-v1.0.1.mcpb` exists.
+- Open the `.mcpb` file with Claude Desktop.
+- Enter `KEEPA_API_KEY` in the install form.
+- Confirm Keepa tools appear in Claude Desktop.
+- Run a low-cost call such as `keepa_check_tokens`.
+- Temporarily install with a missing or invalid key and confirm the adapter returns a clear API-key error rather than crashing.
+- Push a version tag and confirm the GitHub Action attaches the `.mcpb` to the release.
+
+## Troubleshooting
+
+- **Claude Desktop does not show the tools:** restart Claude Desktop, confirm the extension is enabled, and reinstall the `.mcpb` if needed.
+- **Missing API key errors:** reinstall or edit the extension configuration and enter a valid Keepa API key.
+- **Invalid Keepa key or token errors:** verify the key works against Keepa directly and has enough token budget.
+- **Node/runtime errors:** use the `.mcpb` install path when possible. For manual installs, confirm `node --version` is `18` or newer.
+- **Build output looks stale:** run `npm run build`, then `npm run mcpb:pack` again.
+- **Network/API failures:** confirm the machine running Claude Desktop can reach `https://api.keepa.com`.
+- **Manual JSON config does not work:** use an absolute path to `dist/index.js`, keep `command` as `node`, and restart the MCP client after editing config.
 
 ## Token Budget
 

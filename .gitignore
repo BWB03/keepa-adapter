@@ -1,8 +1,11 @@
 node_modules/
 dist/
+.mcpb-build/
+release/
 .env
 *.tsbuildinfo
 tests/fixtures/raw/
 *.db
 *.db-journal
+*.db-shm
 *.db-wal

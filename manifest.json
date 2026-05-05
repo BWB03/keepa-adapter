@@ -1,0 +1,134 @@
+{
+  "manifest_version": "0.3",
+  "name": "keepa-adapter",
+  "display_name": "Keepa Adapter",
+  "version": "1.0.1",
+  "description": "MCP server for Keepa Amazon product monitoring tools.",
+  "long_description": "Keepa Adapter exposes Keepa Amazon product monitoring data as MCP tools for product lookup, price history, buy box analysis, variation checks, monitoring snapshots, promotions, sales history, seller stats, and category intelligence.",
+  "author": {
+    "name": "SkillCrate",
+    "url": "https://skillcrate.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BWB03/keepa-adapter.git"
+  },
+  "homepage": "https://skillcrate.dev",
+  "documentation": "https://github.com/BWB03/keepa-adapter#readme",
+  "support": "https://github.com/BWB03/keepa-adapter/issues",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {
+        "KEEPA_API_KEY": "${user_config.keepa_api_key}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "keepa_get_product",
+      "description": "Fetch current product data for ASINs from Keepa."
+    },
+    {
+      "name": "keepa_get_price_history",
+      "description": "Get price, rank, rating, and review history for ASINs."
+    },
+    {
+      "name": "keepa_get_buy_box",
+      "description": "Get buy box ownership and offer information for ASINs."
+    },
+    {
+      "name": "keepa_get_variations",
+      "description": "Get variation family relationships and attributes for an ASIN."
+    },
+    {
+      "name": "keepa_check_tokens",
+      "description": "Check remaining Keepa API tokens and refresh rate."
+    },
+    {
+      "name": "keepa_track_asins",
+      "description": "Add ASINs to the monitoring list."
+    },
+    {
+      "name": "keepa_take_snapshot",
+      "description": "Fetch and store snapshots for tracked ASINs."
+    },
+    {
+      "name": "keepa_get_changes",
+      "description": "Query detected product changes."
+    },
+    {
+      "name": "keepa_analyze_bsr_trend",
+      "description": "Analyze BSR trend patterns for ASINs."
+    },
+    {
+      "name": "keepa_check_variations",
+      "description": "Check variation families for drift and orphaned children."
+    },
+    {
+      "name": "keepa_add_promo",
+      "description": "Register a promotional event for an ASIN."
+    },
+    {
+      "name": "keepa_list_promos",
+      "description": "List promotional events."
+    },
+    {
+      "name": "keepa_analyze_promo_impact",
+      "description": "Measure promotional lift using rank and price data."
+    },
+    {
+      "name": "keepa_get_sales_history",
+      "description": "Get monthly sales volume history for ASINs."
+    },
+    {
+      "name": "keepa_get_deals",
+      "description": "Get coupon history, active promotions, and lightning deal data."
+    },
+    {
+      "name": "keepa_get_seller_stats",
+      "description": "Get buy box statistics by seller for ASINs."
+    },
+    {
+      "name": "keepa_get_best_sellers",
+      "description": "Get best seller ASINs for a category."
+    },
+    {
+      "name": "keepa_get_category",
+      "description": "Look up Keepa category details."
+    }
+  ],
+  "keywords": [
+    "keepa",
+    "amazon",
+    "product-monitoring",
+    "mcp",
+    "skillcrate"
+  ],
+  "license": "MIT",
+  "privacy_policies": [
+    "https://keepa.com/#!disclaimer"
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "keepa_api_key": {
+      "type": "string",
+      "title": "Keepa API Key",
+      "description": "Your Keepa API key.",
+      "sensitive": true,
+      "required": true
+    }
+  }
+}

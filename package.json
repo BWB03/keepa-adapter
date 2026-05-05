@@ -1,6 +1,6 @@
 {
   "name": "keepa-adapter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SkillCrate adapter: MCP server + OpenClaw skill for Keepa Amazon product monitoring",
   "type": "module",
   "bin": {
@@ -17,6 +17,9 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/index.ts",
+    "mcpb:stage": "node scripts/prepare-mcpb.mjs",
+    "mcpb:validate": "npm run build && npm run mcpb:stage && mcpb validate .mcpb-build",
+    "mcpb:pack": "npm run build && npm run mcpb:stage && mcpb validate .mcpb-build && node scripts/pack-mcpb.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
@@ -32,6 +35,7 @@
     "zod": "^3.24.4"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.15.3",
     "tsup": "^8.4.0",
