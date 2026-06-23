@@ -157,6 +157,11 @@ Schedule with cron for daily monitoring:
 0 6 * * * cd /path/to/keepa-adapter && KEEPA_API_KEY=xxx npm run collect
 ```
 
+
+## Playbooks
+
+- [Amazon Monitoring Playbook](docs/amazon-monitoring-playbook.md) - Operating workflow for turning Keepa price, BSR, buy box, sales, variation, and promo signals into actions.
+
 ## MCP Tools Reference
 
 ### Read Tools
