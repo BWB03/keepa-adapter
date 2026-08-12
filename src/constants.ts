@@ -1,4 +1,4 @@
-export const ADAPTER_VERSION = "1.1.1";
+export const ADAPTER_VERSION = "1.2.0";
 export const SOURCE = "keepa";
 export const BASE_URL = "https://api.keepa.com";
 export const DEFAULT_TIMEOUT_MS = 30_000;
@@ -14,13 +14,11 @@ export const KEEPA_DOMAINS: Record<string, number> = {
   fr: 4,
   jp: 5,
   ca: 6,
-  cn: 7,
   it: 8,
   es: 9,
   in: 10,
   mx: 11,
   br: 12,
-  au: 13,
 };
 
 // CSV type indices for Keepa's flat array format

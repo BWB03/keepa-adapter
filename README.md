@@ -1,6 +1,6 @@
 # keepa-adapter
 
-MCP server + OpenClaw skill for Amazon product monitoring via the [Keepa API](https://keepa.com/#!api). 18 MCP tools covering prices, BSR trends, buy box changes, variation families, monthly sales, coupon/deal tracking, seller stats, category lookup, and promotional impact for 100+ ASINs.
+MCP server + OpenClaw skill for Amazon intelligence via the [Keepa API](https://keepa.com/api-docs/). 33 MCP tools cover every path in Keepa's current endpoint index, plus local snapshots, change detection, BSR analysis, and promotion measurement.
 
 ## Setup
 
@@ -37,7 +37,7 @@ npm run mcpb:pack
 The packaged bundle is written to:
 
 ```bash
-release/keepa-adapter-v1.1.1.mcpb
+release/keepa-adapter-v1.2.0.mcpb
 release/keepa-adapter.mcpb
 ```
 
@@ -65,7 +65,7 @@ All tools support international Amazon marketplaces via the `domain` parameter. 
 KEEPA_DEFAULT_DOMAIN=uk   # All tools now default to Amazon.co.uk
 ```
 
-Supported domains: `com` (US), `uk`, `de`, `fr`, `jp`, `ca`, `cn`, `it`, `es`, `in`, `mx`, `br`, `au`
+Supported domains: `com` (US), `uk`, `de`, `fr`, `jp`, `ca`, `it`, `es`, `in`, `mx`, `br`. Keepa only supports Brazil on a subset of endpoints; the adapter validates that restriction before sending a request.
 
 You can still override per-call by passing `domain` explicitly to any tool.
 
@@ -178,7 +178,7 @@ Schedule with cron for daily monitoring:
 
 | Tool | Description |
 |------|-------------|
-| `keepa_track_asins` | Add ASINs to the monitoring list |
+| `keepa_track_asins` | Add ASINs to the adapter's local monitoring list |
 | `keepa_take_snapshot` | Fetch + store snapshot, return changes vs previous |
 | `keepa_get_changes` | Query detected changes by ASIN, severity, or date range |
 | `keepa_analyze_bsr_trend` | Analyze BSR trend and flag deterioration |
@@ -189,10 +189,32 @@ Schedule with cron for daily monitoring:
 | Tool | Description |
 |------|-------------|
 | `keepa_get_sales_history` | Get monthly sales volume time series (units sold over time) |
-| `keepa_get_deals` | Get coupon history, active promotions, and lightning deal data |
-| `keepa_get_seller_stats` | Get buy box win %, average price, and FBA status per seller |
+| `keepa_get_deals` | Get ASIN-specific coupon, promotion, and lightning-deal history from `/product` |
+| `keepa_get_seller_stats` | Get product-level Buy Box win %, average price, and FBA status from `/product` |
 | `keepa_get_best_sellers` | Get the best seller ASIN list for a category |
 | `keepa_get_category` | Look up category details (name, parent, children, product count) |
+
+### Official Keepa API Tools
+
+| Tool | Keepa operation |
+|------|-----------------|
+| `keepa_search_products` | Product Search (`/search?type=product`) |
+| `keepa_find_products` | Product Finder (`/query`, POST) |
+| `keepa_browse_deals` | Browsing Deals (`/deal`, POST) |
+| `keepa_search_categories` | Category Search (`/search?type=category`) |
+| `keepa_get_sellers` | Seller Information (`/seller`) |
+| `keepa_find_sellers` | Seller Finder (`/sellerquery`, POST) |
+| `keepa_get_top_sellers` | Most Rated Sellers (`/topseller`) |
+| `keepa_get_lightning_deals` | Lightning Deals (`/lightningdeal`) |
+| `keepa_get_graph_image` | Graph Image API (`/graphimage`) |
+| `keepa_add_api_trackings` | Add Keepa-hosted trackings (`/tracking?type=add`) |
+| `keepa_remove_api_tracking` | Remove one or all Keepa-hosted trackings |
+| `keepa_get_api_trackings` | Get or list Keepa-hosted trackings |
+| `keepa_get_tracking_notifications` | Retrieve tracking notifications; read-only by default |
+| `keepa_get_tracking_lists` | List named tracking lists |
+| `keepa_set_tracking_webhook` | Configure the Keepa notification webhook |
+
+`keepa_track_asins` remains a lightweight local snapshot list. The `keepa_*_api_tracking*` tools use Keepa's hosted Tracking API and affect the Keepa account associated with the API key.
 
 ### Promo Tools
 
@@ -249,15 +271,26 @@ npm run mcpb:pack      # Build release/keepa-adapter-vX.Y.Z.mcpb
 npm run test:watch     # Watch mode
 npm run test:integration  # Integration tests (requires KEEPA_API_KEY)
 npm run discover       # Hit live API and save raw response for schema modeling
+npm run export:asins -- --input exports/todd-hydrapak-asins.txt
 ```
+
+### Raw ASIN Export
+
+For one-off catalog dumps, put ASINs in a text file and run:
+
+```bash
+KEEPA_API_KEY=xxx npm run export:asins -- --input exports/todd-hydrapak-asins.txt
+```
+
+The exporter writes a timestamped `exports/keepa-raw-*` folder with raw Keepa JSON plus CSVs for product fields, decoded price/rank histories, variations, and offers. By default it skips the higher-token offer scrape; add `--buybox --offers 20` when seller/offer detail is needed.
 
 ## MCPB Release Flow
 
 Version tags create GitHub Releases with the packaged `.mcpb` attached:
 
 ```bash
-git tag v1.1.1
-git push origin v1.1.1
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
 The release workflow runs tests, builds the adapter, validates the MCPB manifest, packs the bundle, and uploads `release/*.mcpb` as a release asset.
@@ -268,7 +301,7 @@ The release workflow runs tests, builds the adapter, validates the MCPB manifest
 - Run `npm run build`.
 - Run `npm run mcpb:validate`.
 - Run `npm run mcpb:pack`.
-- Confirm `release/keepa-adapter-v1.1.1.mcpb` exists.
+- Confirm `release/keepa-adapter-v1.2.0.mcpb` exists.
 - Confirm `release/keepa-adapter.mcpb` exists for stable website download links.
 - Open the `.mcpb` file with Claude Desktop.
 - Enter `KEEPA_API_KEY` in the install form.

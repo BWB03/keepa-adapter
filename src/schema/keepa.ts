@@ -237,4 +237,61 @@ export const KeepaCategoryResponseSchema = z.object({
   refillIn: z.number(),
   refillRate: z.number(),
   categories: z.record(z.string(), KeepaCategorySchema).nullable().optional(),
-});
+  categoryParents: z.record(z.string(), KeepaCategorySchema).nullable().optional(),
+}).passthrough();
+
+// --- Search, Finder, Deals, Sellers, Lightning Deals, and Tracking ---
+
+const KeepaResponseMetadataSchema = z.object({
+  timestamp: z.number(),
+  tokensLeft: z.number(),
+  refillIn: z.number(),
+  refillRate: z.number(),
+  tokensConsumed: z.number().optional(),
+  processingTimeInMs: z.number().optional(),
+  error: z.unknown().optional(),
+}).passthrough();
+
+export const KeepaProductSearchResponseSchema = KeepaResponseMetadataSchema.extend({
+  products: z.array(KeepaProductSchema).nullable().optional(),
+  asinList: z.array(z.string()).nullable().optional(),
+}).passthrough();
+
+export const KeepaProductFinderResponseSchema = KeepaResponseMetadataSchema.extend({
+  asinList: z.array(z.string()).nullable().optional(),
+  totalResults: z.number().nullable().optional(),
+  searchInsights: z.unknown().nullable().optional(),
+}).passthrough();
+
+export const KeepaDealsResponseSchema = KeepaResponseMetadataSchema.extend({
+  deals: z.array(z.unknown()).nullable().optional(),
+}).passthrough();
+
+export const KeepaSellerSchema = z.object({
+  sellerId: z.string().optional(),
+  sellerName: z.string().nullable().optional(),
+}).passthrough();
+
+export const KeepaSellerResponseSchema = KeepaResponseMetadataSchema.extend({
+  sellers: z.record(z.string(), KeepaSellerSchema).nullable().optional(),
+}).passthrough();
+
+export const KeepaSellerFinderResponseSchema = KeepaResponseMetadataSchema.extend({
+  sellerIdList: z.array(z.string()).nullable().optional(),
+  totalResults: z.number().nullable().optional(),
+}).passthrough();
+
+export const KeepaTopSellerResponseSchema = KeepaResponseMetadataSchema.extend({
+  sellerIdList: z.array(z.string()).nullable().optional(),
+}).passthrough();
+
+export const KeepaLightningDealsResponseSchema = KeepaResponseMetadataSchema.extend({
+  lightningDeals: z.array(z.unknown()).nullable().optional(),
+}).passthrough();
+
+export const KeepaTrackingResponseSchema = KeepaResponseMetadataSchema.extend({
+  trackings: z.array(z.unknown()).nullable().optional(),
+  asinList: z.array(z.string()).nullable().optional(),
+  notifications: z.array(z.unknown()).nullable().optional(),
+  trackingListNames: z.array(z.string()).nullable().optional(),
+}).passthrough();

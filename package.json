@@ -1,6 +1,6 @@
 {
   "name": "keepa-adapter",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "SkillCrate adapter: MCP server + OpenClaw skill for Keepa Amazon product monitoring",
   "type": "module",
   "bin": {
@@ -24,6 +24,7 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "discover": "tsx scripts/discover.ts",
+    "export:asins": "tsx scripts/export-asins.ts",
     "collect": "tsx src/scheduler/runner.ts"
   },
   "engines": {

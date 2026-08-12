@@ -14,6 +14,11 @@ export interface KeepaResponse<T> {
   tokens: TokenMeta;
 }
 
+export interface KeepaBinaryResponse {
+  data: Uint8Array;
+  contentType: string;
+}
+
 export class KeepaApiError extends Error {
   constructor(
     message: string,
@@ -57,39 +62,94 @@ export class KeepaClient {
     params?: Record<string, string | number | boolean | undefined>,
     tokenCost = 1
   ): Promise<KeepaResponse<T>> {
+    return this.requestJson("GET", path, schema, params, undefined, tokenCost);
+  }
+
+  async post<T>(
+    path: string,
+    schema: ZodSchema<T>,
+    body: unknown,
+    params?: Record<string, string | number | boolean | undefined>,
+    tokenCost = 1
+  ): Promise<KeepaResponse<T>> {
+    return this.requestJson("POST", path, schema, params, body, tokenCost);
+  }
+
+  async getBinary(
+    path: string,
+    params?: Record<string, string | number | boolean | undefined>,
+    tokenCost = 1
+  ): Promise<KeepaBinaryResponse> {
     await this.bucket.acquire(tokenCost);
 
+    const url = this.buildUrl(path, params);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const res = await fetch(url.toString(), { signal: controller.signal });
+      if (!res.ok) await this.throwApiError(res);
+
+      return {
+        data: new Uint8Array(await res.arrayBuffer()),
+        contentType: res.headers.get("content-type") ?? "application/octet-stream",
+      };
+    } catch (err) {
+      this.rethrowRequestError(err);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private buildUrl(
+    path: string,
+    params?: Record<string, string | number | boolean | undefined>
+  ): URL {
     const url = new URL(path, this.baseUrl);
-    // Keepa uses query param for auth
     url.searchParams.set("key", this.apiKey);
     if (params) {
       for (const [k, v] of Object.entries(params)) {
         if (v != null) url.searchParams.set(k, String(v));
       }
     }
+    return url;
+  }
+
+  private async requestJson<T>(
+    method: "GET" | "POST",
+    path: string,
+    schema: ZodSchema<T>,
+    params: Record<string, string | number | boolean | undefined> | undefined,
+    body: unknown,
+    tokenCost: number
+  ): Promise<KeepaResponse<T>> {
+    await this.bucket.acquire(tokenCost);
+
+    const url = this.buildUrl(path, params);
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
 
     try {
       const res = await fetch(url.toString(), {
+        method,
         signal: controller.signal,
+        ...(method === "POST"
+          ? {
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(body),
+            }
+          : {}),
       });
 
-      if (!res.ok) {
-        const body = await res.text().catch(() => undefined);
-        throw new KeepaApiError(
-          `Keepa API ${res.status}: ${res.statusText}`,
-          res.status,
-          body
-        );
-      }
+      if (!res.ok) await this.throwApiError(res);
 
       const json = await res.json();
       const parsed = schema.parse(json);
 
       // Extract token metadata from response
       const tokenMeta: TokenMeta = {
+        consumed: (json as Record<string, number>).tokensConsumed,
         remaining: (json as Record<string, number>).tokensLeft ?? 0,
         refill_in_ms: (json as Record<string, number>).refillIn ?? 0,
         refill_rate: (json as Record<string, number>).refillRate ?? 0,
@@ -104,16 +164,29 @@ export class KeepaClient {
 
       return { data: parsed, tokens: tokenMeta };
     } catch (err) {
-      if (err instanceof KeepaApiError) throw err;
-      if (err instanceof Error && err.name === "AbortError") {
-        throw new KeepaApiError(
-          `Keepa API request timed out after ${this.timeoutMs}ms`,
-          408
-        );
-      }
-      throw err;
+      this.rethrowRequestError(err);
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  private async throwApiError(res: Response): Promise<never> {
+    const body = await res.text().catch(() => undefined);
+    throw new KeepaApiError(
+      `Keepa API ${res.status}: ${res.statusText}`,
+      res.status,
+      body
+    );
+  }
+
+  private rethrowRequestError(err: unknown): never {
+    if (err instanceof KeepaApiError) throw err;
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new KeepaApiError(
+        `Keepa API request timed out after ${this.timeoutMs}ms`,
+        408
+      );
+    }
+    throw err;
   }
 }

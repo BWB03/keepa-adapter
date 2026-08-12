@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0 - 2026-08-12
+
+### Added
+- Full route coverage for all 12 unique paths in Keepa's current API endpoint index: product and category search, Product Finder, Browsing Deals, seller information and finder, top sellers, Lightning Deals, graph images, and every Tracking API operation.
+- POST support for large finder, deal, seller, and tracking payloads, plus binary PNG responses for graph images.
+- Matching `KeepaSkill` library methods and endpoint-level mocked HTTP coverage tests.
+
+### Fixed
+- `keepa_get_price_history.days` now sends Keepa's `days` parameter instead of only changing the `stats` interval.
+- Category lookups now explicitly send the required `parents` parameter.
+- Token metadata includes `tokensConsumed`, and the local limiter mirrors Keepa's behavior when an expensive request drives a positive balance negative.
+- Unsupported China and Australia domain mappings were removed, and Brazil is rejected on endpoints where Keepa does not support it.
+- Local ASIN tracking, ASIN promotion history, and product-level seller stats are now clearly distinguished from Keepa's hosted Tracking, Browsing Deals, and Seller Information APIs.
+
 ## 1.1.1 - 2026-05-08
 
 ### Fixed
