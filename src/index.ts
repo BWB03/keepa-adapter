@@ -3,7 +3,27 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 
 import { KeepaClient, KeepaApiError } from "./adapter/client.js";
-import { getProduct, getTokenStatus, getBestSellers, getCategoryLookup } from "./adapter/endpoints.js";
+import {
+  getProduct,
+  getTokenStatus,
+  getBestSellers,
+  getCategoryLookup,
+  searchProducts,
+  findProducts,
+  browseDeals,
+  searchCategories,
+  getSellers,
+  findSellers,
+  getTopSellers,
+  getLightningDeals,
+  getGraphImage,
+  addApiTrackings,
+  removeApiTracking,
+  getApiTrackings,
+  getTrackingNotifications,
+  getTrackingListNames,
+  setTrackingWebhook,
+} from "./adapter/endpoints.js";
 import {
   toUniversalEnvelope,
   toErrorEnvelope,
@@ -30,7 +50,7 @@ const client = new KeepaClient();
 const db = await initDb();
 const server = new McpServer({
   name: "keepa-adapter",
-  version: "1.1.1",
+  version: "1.2.0",
 });
 
 function errorResult(err: unknown) {
@@ -102,6 +122,7 @@ server.tool(
         asins,
         domain: domain ?? DEFAULT_DOMAIN,
         stats: days ?? 90,
+        days: days ?? 90,
         history: true,
         rating: true,
       });
@@ -218,7 +239,7 @@ server.tool(
 // --- 6. Track ASINs ---
 server.tool(
   "keepa_track_asins",
-  "Add ASINs to the monitoring list for daily snapshot collection and change detection.",
+  "Add ASINs to the adapter's local monitoring list for snapshot collection and change detection. This does not use Keepa's hosted Tracking API.",
   {
     asins: z.array(z.string()).min(1).describe("ASINs to track"),
     domain: z.string().optional().describe("Amazon domain (default: com)"),
@@ -534,7 +555,7 @@ server.tool(
 // --- 15. Get Deals ---
 server.tool(
   "keepa_get_deals",
-  "Get coupon history, active promotions, and lightning deal data for ASINs.",
+  "Get ASIN-specific coupon, promotion, and lightning-deal history from Keepa product data. Use keepa_browse_deals for the official /deal endpoint.",
   {
     asins: z.array(z.string()).min(1).max(100).describe("ASINs to get deal data for"),
     domain: z.string().optional().describe("Amazon domain (default: com)"),
@@ -562,7 +583,7 @@ server.tool(
 // --- 16. Get Seller Stats ---
 server.tool(
   "keepa_get_seller_stats",
-  "Get buy box statistics per seller for ASINs, including win percentage, average price, and FBA status.",
+  "Get product-level Buy Box statistics per seller from /product. Use keepa_get_sellers for Keepa seller objects.",
   {
     asins: z.array(z.string()).min(1).max(100).describe("ASINs to get seller stats for"),
     domain: z.string().optional().describe("Amazon domain (default: com)"),
@@ -593,7 +614,7 @@ server.tool(
   "keepa_get_best_sellers",
   "Get the best seller ASIN list for a category.",
   {
-    category: z.number().int().describe("Category ID to look up"),
+    category: z.union([z.number().int(), z.string().min(1)]).describe("Category ID or product group"),
     domain: z.string().optional().describe("Amazon domain (default: com)"),
   },
   async ({ category, domain }) => {
@@ -631,6 +652,7 @@ server.tool(
       const res = await getCategoryLookup(client, {
         domain: domain ?? DEFAULT_DOMAIN,
         category,
+        parents: true,
       });
       const categories = res.data.categories ?? {};
       const catData = categories[String(category)] ?? null;
@@ -649,6 +671,253 @@ server.tool(
     } catch (err) {
       return errorResult(err);
     }
+  }
+);
+
+// =====================
+// Keepa API Coverage Tools (15)
+// =====================
+
+server.tool(
+  "keepa_search_products",
+  "Search Amazon products by keyword using Keepa's Product Search endpoint.",
+  {
+    term: z.string().min(1).describe("Search term"),
+    domain: z.string().optional().describe("Amazon domain (default: com)"),
+    page: z.number().int().min(0).optional(),
+    stats_days: z.number().int().positive().optional(),
+    asins_only: z.boolean().optional(),
+  },
+  async ({ term, domain, page, stats_days, asins_only }) => {
+    try {
+      const res = await searchProducts(client, {
+        term,
+        domain: domain ?? DEFAULT_DOMAIN,
+        page,
+        stats: stats_days,
+        asinsOnly: asins_only,
+      });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("product_search", res.data, { marketplace: domain ?? DEFAULT_DOMAIN, tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_find_products",
+  "Run a Keepa Product Finder query. Pass the documented Product Finder selection object.",
+  {
+    selection: z.record(z.string(), z.unknown()).describe("Keepa Product Finder queryJSON object"),
+    domain: z.string().optional().describe("Amazon domain (default: com)"),
+    include_insights: z.boolean().optional().describe("Include Search Insights statistics"),
+  },
+  async ({ selection, domain, include_insights }) => {
+    try {
+      const res = await findProducts(client, { selection, domain: domain ?? DEFAULT_DOMAIN, stats: include_insights });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("product_finder", res.data, { marketplace: domain ?? DEFAULT_DOMAIN, tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_browse_deals",
+  "Browse Keepa's recent marketplace deals. Unlike keepa_get_deals, this calls the official /deal endpoint.",
+  {
+    selection: z.record(z.string(), z.unknown()).describe("Keepa Browsing Deals queryJSON object"),
+    domain: z.string().optional().describe("Amazon domain (default: com)"),
+  },
+  async ({ selection, domain }) => {
+    try {
+      const res = await browseDeals(client, { selection, domain: domain ?? DEFAULT_DOMAIN });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("deal_browse", res.data, { marketplace: domain ?? DEFAULT_DOMAIN, tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_search_categories",
+  "Search Amazon categories by name using Keepa's Category Search endpoint.",
+  {
+    term: z.string().min(3),
+    domain: z.string().optional().describe("Amazon domain (default: com)"),
+  },
+  async ({ term, domain }) => {
+    try {
+      const res = await searchCategories(client, { term, domain: domain ?? DEFAULT_DOMAIN });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("category_search", res.data, { marketplace: domain ?? DEFAULT_DOMAIN, tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_get_sellers",
+  "Retrieve Keepa seller objects by seller ID, optionally including storefront ASINs.",
+  {
+    seller_ids: z.array(z.string()).min(1).max(100),
+    domain: z.string().optional().describe("Amazon domain (default: com)"),
+    storefront: z.boolean().optional().describe("Include storefront ASINs; costs 9 extra tokens per seller"),
+  },
+  async ({ seller_ids, domain, storefront }) => {
+    try {
+      const res = await getSellers(client, { sellerIds: seller_ids, domain: domain ?? DEFAULT_DOMAIN, storefront });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("seller_information", res.data, { marketplace: domain ?? DEFAULT_DOMAIN, tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_find_sellers",
+  "Run a Keepa Seller Finder query and return matching seller IDs.",
+  {
+    selection: z.record(z.string(), z.unknown()).describe("Keepa Seller Finder queryJSON object"),
+    domain: z.string().optional().describe("Amazon domain (default: com)"),
+  },
+  async ({ selection, domain }) => {
+    try {
+      const res = await findSellers(client, { selection, domain: domain ?? DEFAULT_DOMAIN });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("seller_finder", res.data, { marketplace: domain ?? DEFAULT_DOMAIN, tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_get_top_sellers",
+  "Retrieve the most-rated seller IDs for an Amazon locale.",
+  { domain: z.string().optional().describe("Amazon domain (default: com)") },
+  async ({ domain }) => {
+    try {
+      const res = await getTopSellers(client, { domain: domain ?? DEFAULT_DOMAIN });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("top_sellers", res.data, { marketplace: domain ?? DEFAULT_DOMAIN, tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_get_lightning_deals",
+  "Retrieve current Keepa Lightning Deals. A full-list request costs 500 tokens and requires full_list=true.",
+  {
+    asin: z.string().optional(),
+    domain: z.string().optional().describe("Amazon domain (default: com)"),
+    state: z.enum(["AVAILABLE", "WAITLIST", "SOLDOUT", "WAITLISTFULL", "EXPIRED", "SUPPRESSED"]).optional(),
+    full_list: z.boolean().optional().describe("Required when asin is omitted; costs 500 tokens"),
+  },
+  async ({ asin, domain, state, full_list }) => {
+    try {
+      if (!asin && !full_list) throw new Error("Provide asin, or explicitly set full_list=true for the 500-token request");
+      const res = await getLightningDeals(client, { asin, state, domain: domain ?? DEFAULT_DOMAIN });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("lightning_deals", res.data, { marketplace: domain ?? DEFAULT_DOMAIN, tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_get_graph_image",
+  "Render a Keepa product history graph as a PNG image without exposing the API key.",
+  {
+    asin: z.string(),
+    domain: z.string().optional().describe("Amazon domain (default: com)"),
+    days: z.number().int().positive().optional(),
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+    types: z.string().optional().describe("Keepa graph series selection string"),
+    subranks: z.boolean().optional(),
+    monthlysold: z.boolean().optional(),
+  },
+  async ({ asin, domain, days, width, height, types, subranks, monthlysold }) => {
+    try {
+      const res = await getGraphImage(client, { asin, domain: domain ?? DEFAULT_DOMAIN, days, width, height, types, subranks, monthlysold });
+      return { content: [{ type: "image", data: Buffer.from(res.data).toString("base64"), mimeType: res.contentType.split(";")[0] }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_add_api_trackings",
+  "Add or update Keepa-hosted API trackings. This is separate from the adapter's local keepa_track_asins list.",
+  {
+    trackings: z.array(z.record(z.string(), z.unknown())).min(1).max(3000).describe("Keepa tracking creation objects"),
+    list: z.string().max(64).optional(),
+  },
+  async ({ trackings, list }) => {
+    try {
+      const res = await addApiTrackings(client, trackings, list);
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("api_trackings_added", res.data, { tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_remove_api_tracking",
+  "Remove one Keepa-hosted API tracking, or explicitly remove every tracking in a list.",
+  {
+    asin: z.string().optional(),
+    list: z.string().max(64).optional(),
+    remove_all: z.boolean().optional().describe("Set true to clear the selected list; asin is ignored"),
+  },
+  async ({ asin, list, remove_all }) => {
+    try {
+      const res = await removeApiTracking(client, { asin, list, removeAll: remove_all });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("api_tracking_removed", res.data, { tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_get_api_trackings",
+  "Retrieve one or all Keepa-hosted API trackings.",
+  {
+    asin: z.string().optional(),
+    list: z.string().max(64).optional(),
+    asins_only: z.boolean().optional(),
+    page: z.number().int().min(0).optional(),
+    per_page: z.number().int().positive().max(100000).optional(),
+  },
+  async ({ asin, list, asins_only, page, per_page }) => {
+    try {
+      const res = await getApiTrackings(client, { asin, list, asinsOnly: asins_only, page, perPage: per_page });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("api_trackings", res.data, { tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_get_tracking_notifications",
+  "Retrieve Keepa tracking notifications. Defaults to read-only so notifications are not consumed.",
+  {
+    since: z.number().int().describe("KeepaTime minute to retrieve from"),
+    revise: z.boolean().optional().describe("Include notifications already marked read"),
+    include_all: z.boolean().optional(),
+    read_only: z.boolean().optional().describe("Defaults to true"),
+    list: z.string().max(64).optional(),
+  },
+  async ({ since, revise, include_all, read_only, list }) => {
+    try {
+      const res = await getTrackingNotifications(client, { since, revise: revise ?? false, all: include_all, readOnly: read_only ?? true, list });
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("tracking_notifications", res.data, { tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_get_tracking_lists",
+  "Retrieve the names of Keepa-hosted tracking lists.",
+  {},
+  async () => {
+    try {
+      const res = await getTrackingListNames(client);
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("tracking_lists", res.data, { tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
+  }
+);
+
+server.tool(
+  "keepa_set_tracking_webhook",
+  "Set the webhook URL used by Keepa-hosted API tracking notifications.",
+  { url: z.string().url() },
+  async ({ url }) => {
+    try {
+      const res = await setTrackingWebhook(client, url);
+      return { content: [{ type: "text", text: JSON.stringify(toUniversalEnvelope("tracking_webhook", res.data, { tokens: res.tokens }), null, 2) }] };
+    } catch (err) { return errorResult(err); }
   }
 );
 

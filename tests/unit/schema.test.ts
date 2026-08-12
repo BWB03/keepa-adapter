@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   KeepaProductResponseSchema,
   KeepaTokenStatusSchema,
+  KeepaTrackingResponseSchema,
 } from "../../src/schema/keepa.js";
 import {
   UniversalEnvelopeSchema,
@@ -53,6 +54,21 @@ describe("schemas", () => {
       };
       const result = KeepaTokenStatusSchema.parse(data);
       expect(result.tokensLeft).toBe(42);
+    });
+  });
+
+  describe("expanded Keepa API schemas", () => {
+    it("preserves endpoint-specific tracking fields", () => {
+      const result = KeepaTrackingResponseSchema.parse({
+        timestamp: 1,
+        tokensLeft: 42,
+        refillIn: 15000,
+        refillRate: 10,
+        trackingListNames: ["priority"],
+        futureKeepaField: true,
+      });
+      expect(result.trackingListNames).toEqual(["priority"]);
+      expect(result.futureKeepaField).toBe(true);
     });
   });
 

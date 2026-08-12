@@ -42,12 +42,17 @@ export class KeepaTokenBucket {
 
   /** Acquire `cost` tokens, waiting if necessary */
   async acquire(cost = 1): Promise<void> {
+    if (cost <= 0) return;
     this.refill();
-    if (this.tokens >= cost) {
+    // Keepa accepts a request while the bucket is positive even when the
+    // request's final cost drives the balance negative. Mirror that behavior
+    // so fixed-cost calls such as bestsellers (50 tokens) are not blocked when
+    // a lower-refill plan starts with a positive balance.
+    if (this.tokens > 0) {
       this.tokens -= cost;
       return;
     }
-    const waitMs = Math.ceil((cost - this.tokens) / this.refillRate);
+    const waitMs = Math.ceil((1 - this.tokens) / this.refillRate);
     await new Promise((resolve) => setTimeout(resolve, waitMs));
     this.refill();
     this.tokens -= cost;

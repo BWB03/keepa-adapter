@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "keepa-adapter",
   "display_name": "Keepa Adapter",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "MCP server for Keepa Amazon product monitoring tools.",
   "long_description": "Keepa Adapter exposes Keepa Amazon product monitoring data as MCP tools for product lookup, price history, buy box analysis, variation checks, monitoring snapshots, promotions, sales history, seller stats, and category intelligence.",
   "author": {
@@ -52,7 +52,7 @@
     },
     {
       "name": "keepa_track_asins",
-      "description": "Add ASINs to the monitoring list."
+      "description": "Add ASINs to the adapter's local monitoring list."
     },
     {
       "name": "keepa_take_snapshot",
@@ -88,7 +88,7 @@
     },
     {
       "name": "keepa_get_deals",
-      "description": "Get coupon history, active promotions, and lightning deal data."
+      "description": "Get ASIN-specific promotion history from Keepa product data."
     },
     {
       "name": "keepa_get_seller_stats",
@@ -101,6 +101,66 @@
     {
       "name": "keepa_get_category",
       "description": "Look up Keepa category details."
+    },
+    {
+      "name": "keepa_search_products",
+      "description": "Search Amazon products by keyword."
+    },
+    {
+      "name": "keepa_find_products",
+      "description": "Run a Keepa Product Finder query."
+    },
+    {
+      "name": "keepa_browse_deals",
+      "description": "Browse recent marketplace deals through Keepa's deal endpoint."
+    },
+    {
+      "name": "keepa_search_categories",
+      "description": "Search Amazon categories by name."
+    },
+    {
+      "name": "keepa_get_sellers",
+      "description": "Retrieve seller information by seller ID."
+    },
+    {
+      "name": "keepa_find_sellers",
+      "description": "Run a Keepa Seller Finder query."
+    },
+    {
+      "name": "keepa_get_top_sellers",
+      "description": "Retrieve the most-rated sellers for a locale."
+    },
+    {
+      "name": "keepa_get_lightning_deals",
+      "description": "Retrieve one or all current Lightning Deals."
+    },
+    {
+      "name": "keepa_get_graph_image",
+      "description": "Render a product history graph as a PNG image."
+    },
+    {
+      "name": "keepa_add_api_trackings",
+      "description": "Add Keepa-hosted API trackings."
+    },
+    {
+      "name": "keepa_remove_api_tracking",
+      "description": "Remove Keepa-hosted API trackings."
+    },
+    {
+      "name": "keepa_get_api_trackings",
+      "description": "Retrieve Keepa-hosted API trackings."
+    },
+    {
+      "name": "keepa_get_tracking_notifications",
+      "description": "Retrieve Keepa tracking notifications."
+    },
+    {
+      "name": "keepa_get_tracking_lists",
+      "description": "List named Keepa tracking lists."
+    },
+    {
+      "name": "keepa_set_tracking_webhook",
+      "description": "Configure the Keepa tracking webhook."
     }
   ],
   "keywords": [

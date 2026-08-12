@@ -1,5 +1,25 @@
 import { KeepaClient, KeepaApiError } from "./adapter/client.js";
-import { getProduct, getTokenStatus, getBestSellers, getCategoryLookup } from "./adapter/endpoints.js";
+import {
+  getProduct,
+  getTokenStatus,
+  getBestSellers,
+  getCategoryLookup,
+  searchProducts as searchProductsEndpoint,
+  findProducts as findProductsEndpoint,
+  browseDeals as browseDealsEndpoint,
+  searchCategories as searchCategoriesEndpoint,
+  getSellers as getSellersEndpoint,
+  findSellers as findSellersEndpoint,
+  getTopSellers as getTopSellersEndpoint,
+  getLightningDeals as getLightningDealsEndpoint,
+  getGraphImage as getGraphImageEndpoint,
+  addApiTrackings as addApiTrackingsEndpoint,
+  removeApiTracking as removeApiTrackingEndpoint,
+  getApiTrackings as getApiTrackingsEndpoint,
+  getTrackingNotifications as getTrackingNotificationsEndpoint,
+  getTrackingListNames as getTrackingListNamesEndpoint,
+  setTrackingWebhook as setTrackingWebhookEndpoint,
+} from "./adapter/endpoints.js";
 import {
   toUniversalEnvelope,
   toErrorEnvelope,
@@ -81,6 +101,7 @@ export class KeepaSkill {
         asins,
         domain: opts?.domain,
         stats: opts?.days ?? 90,
+        days: opts?.days ?? 90,
         history: true,
         rating: true,
       });
@@ -421,6 +442,7 @@ export class KeepaSkill {
       const res = await getCategoryLookup(this.client, {
         domain: opts?.domain,
         category,
+        parents: true,
       });
       const categories = res.data.categories ?? {};
       const catData = categories[String(category)] ?? null;
@@ -517,6 +539,202 @@ export class KeepaSkill {
     } catch (err) {
       return this.handleError(err);
     }
+  }
+
+  // --- Full Keepa API surface ---
+
+  async searchProducts(term: string, opts?: {
+    domain?: string;
+    page?: number;
+    statsDays?: number;
+    asinsOnly?: boolean;
+  }): Promise<UniversalEnvelope> {
+    try {
+      const res = await searchProductsEndpoint(this.client, {
+        term,
+        domain: opts?.domain,
+        page: opts?.page,
+        stats: opts?.statsDays,
+        asinsOnly: opts?.asinsOnly,
+      });
+      return toUniversalEnvelope("product_search", res.data, {
+        marketplace: opts?.domain ?? DEFAULT_DOMAIN,
+        tokens: res.tokens,
+      });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async findProducts(selection: Record<string, unknown>, opts?: {
+    domain?: string;
+    includeInsights?: boolean;
+  }): Promise<UniversalEnvelope> {
+    try {
+      const res = await findProductsEndpoint(this.client, {
+        selection,
+        domain: opts?.domain,
+        stats: opts?.includeInsights,
+      });
+      return toUniversalEnvelope("product_finder", res.data, {
+        marketplace: opts?.domain ?? DEFAULT_DOMAIN,
+        tokens: res.tokens,
+      });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async browseDeals(selection: Record<string, unknown>, opts?: {
+    domain?: string;
+  }): Promise<UniversalEnvelope> {
+    try {
+      const res = await browseDealsEndpoint(this.client, {
+        selection,
+        domain: opts?.domain,
+      });
+      return toUniversalEnvelope("deal_browse", res.data, {
+        marketplace: opts?.domain ?? DEFAULT_DOMAIN,
+        tokens: res.tokens,
+      });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async searchCategories(term: string, opts?: { domain?: string }): Promise<UniversalEnvelope> {
+    try {
+      const res = await searchCategoriesEndpoint(this.client, { term, domain: opts?.domain });
+      return toUniversalEnvelope("category_search", res.data, {
+        marketplace: opts?.domain ?? DEFAULT_DOMAIN,
+        tokens: res.tokens,
+      });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async getSellers(sellerIds: string[], opts?: {
+    domain?: string;
+    storefront?: boolean;
+  }): Promise<UniversalEnvelope> {
+    try {
+      const res = await getSellersEndpoint(this.client, {
+        sellerIds,
+        domain: opts?.domain,
+        storefront: opts?.storefront,
+      });
+      return toUniversalEnvelope("seller_information", res.data, {
+        marketplace: opts?.domain ?? DEFAULT_DOMAIN,
+        tokens: res.tokens,
+      });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async findSellers(selection: Record<string, unknown>, opts?: { domain?: string }): Promise<UniversalEnvelope> {
+    try {
+      const res = await findSellersEndpoint(this.client, { selection, domain: opts?.domain });
+      return toUniversalEnvelope("seller_finder", res.data, {
+        marketplace: opts?.domain ?? DEFAULT_DOMAIN,
+        tokens: res.tokens,
+      });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async getTopSellers(opts?: { domain?: string }): Promise<UniversalEnvelope> {
+    try {
+      const res = await getTopSellersEndpoint(this.client, { domain: opts?.domain });
+      return toUniversalEnvelope("top_sellers", res.data, {
+        marketplace: opts?.domain ?? DEFAULT_DOMAIN,
+        tokens: res.tokens,
+      });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async getLightningDeals(opts: {
+    domain?: string;
+    asin?: string;
+    state?: string;
+    fullList?: boolean;
+  }): Promise<UniversalEnvelope> {
+    try {
+      if (!opts.asin && !opts.fullList) {
+        return toErrorEnvelope("confirmation_required", "Set fullList=true for the 500-token full-list request");
+      }
+      const res = await getLightningDealsEndpoint(this.client, opts);
+      return toUniversalEnvelope("lightning_deals", res.data, {
+        marketplace: opts.domain ?? DEFAULT_DOMAIN,
+        tokens: res.tokens,
+      });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async getGraphImage(asin: string, opts?: {
+    domain?: string;
+    days?: number;
+    width?: number;
+    height?: number;
+    types?: string;
+    subranks?: boolean;
+    monthlysold?: boolean;
+  }): Promise<UniversalEnvelope> {
+    try {
+      const res = await getGraphImageEndpoint(this.client, { asin, ...opts });
+      return toUniversalEnvelope("graph_image", {
+        mime_type: res.contentType.split(";")[0],
+        base64: Buffer.from(res.data).toString("base64"),
+      }, { marketplace: opts?.domain ?? DEFAULT_DOMAIN });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async addApiTrackings(trackings: Record<string, unknown>[], list?: string): Promise<UniversalEnvelope> {
+    try {
+      const res = await addApiTrackingsEndpoint(this.client, trackings, list);
+      return toUniversalEnvelope("api_trackings_added", res.data, { tokens: res.tokens });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async removeApiTracking(opts: { asin?: string; removeAll?: boolean; list?: string }): Promise<UniversalEnvelope> {
+    try {
+      const res = await removeApiTrackingEndpoint(this.client, opts);
+      return toUniversalEnvelope("api_tracking_removed", res.data, { tokens: res.tokens });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async getApiTrackings(opts: {
+    asin?: string;
+    list?: string;
+    asinsOnly?: boolean;
+    page?: number;
+    perPage?: number;
+  } = {}): Promise<UniversalEnvelope> {
+    try {
+      const res = await getApiTrackingsEndpoint(this.client, opts);
+      return toUniversalEnvelope("api_trackings", res.data, { tokens: res.tokens });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async getTrackingNotifications(opts: {
+    since: number;
+    revise?: boolean;
+    all?: boolean;
+    readOnly?: boolean;
+    list?: string;
+  }): Promise<UniversalEnvelope> {
+    try {
+      const res = await getTrackingNotificationsEndpoint(this.client, {
+        ...opts,
+        revise: opts.revise ?? false,
+        readOnly: opts.readOnly ?? true,
+      });
+      return toUniversalEnvelope("tracking_notifications", res.data, { tokens: res.tokens });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async getTrackingListNames(): Promise<UniversalEnvelope> {
+    try {
+      const res = await getTrackingListNamesEndpoint(this.client);
+      return toUniversalEnvelope("tracking_lists", res.data, { tokens: res.tokens });
+    } catch (err) { return this.handleError(err); }
+  }
+
+  async setTrackingWebhook(url: string): Promise<UniversalEnvelope> {
+    try {
+      const res = await setTrackingWebhookEndpoint(this.client, url);
+      return toUniversalEnvelope("tracking_webhook", res.data, { tokens: res.tokens });
+    } catch (err) { return this.handleError(err); }
   }
 
   // --- Alerts (for bot consumption) ---

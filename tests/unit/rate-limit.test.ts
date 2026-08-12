@@ -21,6 +21,20 @@ describe("KeepaTokenBucket", () => {
     expect(bucket.balance).toBeCloseTo(5, 0);
   });
 
+  it("allows a Keepa request to drive a positive bucket negative", async () => {
+    const bucket = new KeepaTokenBucket(5);
+    await bucket.acquire(50);
+    expect(bucket.balance).toBeLessThan(0);
+  });
+
+  it("does not wait for zero-cost requests when the bucket is negative", async () => {
+    const bucket = new KeepaTokenBucket(5);
+    await bucket.acquire(50);
+    const start = Date.now();
+    await bucket.acquire(0);
+    expect(Date.now() - start).toBeLessThan(20);
+  });
+
   it("updates from API response", () => {
     const bucket = new KeepaTokenBucket(5);
     bucket.updateFromResponse({
