@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- `keepa_get_seller_stats` now accepts an optional integer `stats_days` parameter and forwards it to Keepa instead of always requesting 30 days. Both seller stats and `keepa_get_product` use the shared `DEFAULT_STATS_DAYS` constant for the unchanged 30-day default.
+
 ## 1.2.0 - 2026-08-12
 
 ### Added

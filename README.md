@@ -190,7 +190,7 @@ Schedule with cron for daily monitoring:
 |------|-------------|
 | `keepa_get_sales_history` | Get monthly sales volume time series (units sold over time) |
 | `keepa_get_deals` | Get ASIN-specific coupon, promotion, and lightning-deal history from `/product` |
-| `keepa_get_seller_stats` | Get product-level Buy Box win %, average price, and FBA status from `/product` |
+| `keepa_get_seller_stats` | Get product-level Buy Box win %, average price, and FBA status from `/product`; optional `stats_days` sets the stats window (default: 30 days) |
 | `keepa_get_best_sellers` | Get the best seller ASIN list for a category |
 | `keepa_get_category` | Look up category details (name, parent, children, product count) |
 
