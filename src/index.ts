@@ -35,7 +35,7 @@ import {
   transformSellerStats,
 } from "./adapter/transformer.js";
 import { decodeCsvTimeSeries } from "./adapter/keepa-csv.js";
-import { CSV_TYPE, DEFAULT_DOMAIN } from "./constants.js";
+import { CSV_TYPE, DEFAULT_DOMAIN, DEFAULT_STATS_DAYS } from "./constants.js";
 import { initDb } from "./storage/db.js";
 import { insertSnapshot, getLatestSnapshot, getSnapshotHistory } from "./storage/snapshots.js";
 import { insertChange, getRecentChanges } from "./storage/changes.js";
@@ -89,7 +89,7 @@ server.tool(
       const res = await getProduct(client, {
         asins,
         domain: domain ?? DEFAULT_DOMAIN,
-        stats: stats_days ?? 30,
+        stats: stats_days ?? DEFAULT_STATS_DAYS,
         rating: true,
         buybox: true,
       });
@@ -587,13 +587,14 @@ server.tool(
   {
     asins: z.array(z.string()).min(1).max(100).describe("ASINs to get seller stats for"),
     domain: z.string().optional().describe("Amazon domain (default: com)"),
+    stats_days: z.number().int().optional().describe("Number of days for stats (default: 30)"),
   },
-  async ({ asins, domain }) => {
+  async ({ asins, domain, stats_days }) => {
     try {
       const res = await getProduct(client, {
         asins,
         domain: domain ?? DEFAULT_DOMAIN,
-        stats: 30,
+        stats: stats_days ?? DEFAULT_STATS_DAYS,
         offers: 20,
         buybox: true,
       });
